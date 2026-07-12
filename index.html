@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 晨报 · AI HOT</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1f2430; --muted:#6b7280;
+    --line:#e8ebf2; --primary:#4f46e5;
+    --c-ai-models:#4f46e5; --c-ai-products:#0ea5e9; --c-industry:#f59e0b;
+    --c-paper:#8b5cf6; --c-tip:#ec4899;
+    --radius:16px; --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px; margin:0 auto; padding:0 20px 56px}
+  a{color:inherit}
+  /* progress bar */
+  .progress{position:fixed;top:0;left:0;height:3px;width:100%;z-index:70;opacity:0;transition:opacity .2s;pointer-events:none}
+  .progress.active{opacity:1}
+  .progress::before{content:"";position:absolute;height:100%;width:40%;left:-40%;
+    background:linear-gradient(90deg,transparent,#4f46e5,#7c3aed,transparent);animation:slide 1s infinite linear}
+  @keyframes slide{0%{left:-40%}100%{left:100%}}
+  /* HERO */
+  .hero{position:relative; overflow:hidden; border-radius:0 0 28px 28px;
+    background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 55%,#9333ea 100%);
+    color:#fff; padding:34px 28px 26px; margin-bottom:18px;
+    box-shadow:0 12px 40px rgba(79,70,229,.28)}
+  .hero::after{content:""; position:absolute; right:-60px; top:-60px; width:240px; height:240px;
+    background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%); border-radius:50%}
+  .hero-top{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; position:relative; z-index:1}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.5px; opacity:.95}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:#a5f3fc;box-shadow:0 0 0 4px rgba(165,243,252,.25)}
+  .date{font-size:26px; font-weight:800; margin:14px 0 2px; letter-spacing:.5px}
+  .sub{opacity:.85; font-size:13.5px}
+  .stats{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; position:relative; z-index:1}
+  .stat{background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22);
+    border-radius:12px; padding:10px 14px; min-width:96px; backdrop-filter:blur(4px)}
+  .stat .n{font-size:22px; font-weight:800; line-height:1.1}
+  .stat .l{font-size:12px; opacity:.9; margin-top:2px}
+  .status{font-size:12px; opacity:.9; margin-top:12px; position:relative; z-index:1}
+  /* settings */
+  .settings{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:16px; position:relative; z-index:1}
+  .settings .grp{display:flex; align-items:center; gap:6px; font-size:12.5px; opacity:.95}
+  .settings select,.settings input{
+    font-size:13px; padding:6px 9px; border-radius:9px;
+    border:1px solid rgba(255,255,255,.4); background:rgba(255,255,255,.14); color:#fff; backdrop-filter:blur(4px)}
+  .settings select option{color:#1f2430}
+  .settings input::placeholder{color:rgba(255,255,255,.65)}
+  .refresh{border:1px solid rgba(255,255,255,.5); background:rgba(255,255,255,.12); color:#fff;
+    border-radius:10px; padding:8px 14px; font-size:13px; cursor:pointer; font-weight:600; transition:.18s; backdrop-filter:blur(4px)}
+  .refresh:hover:not(:disabled){background:rgba(255,255,255,.24)}
+  .refresh:disabled{opacity:.7; cursor:default}
+  /* error banner */
+  .errbar{display:none; align-items:center; gap:12px; background:#fff4f4; color:#b42318;
+    border:1px solid #ffd0d0; border-radius:12px; padding:10px 14px; margin:14px 0 4px; font-size:13.5px}
+  .errbar.show{display:flex}
+  .errbar .msg{flex:1}
+  .errbar button{border:none; border-radius:8px; padding:6px 13px; font-weight:700; cursor:pointer; font-size:13px}
+  .errbar .retry{background:#b42318; color:#fff}
+  .errbar .close{background:#fff; color:#b42318; border:1px solid #ffd0d0}
+  /* NAV */
+  .nav{position:sticky; top:0; z-index:5; display:flex; gap:8px; flex-wrap:wrap;
+    background:rgba(244,246,251,.86); backdrop-filter:blur(10px);
+    padding:12px 0; margin-bottom:18px; border-bottom:1px solid var(--line)}
+  .nav a{text-decoration:none; font-size:13.5px; font-weight:600; color:var(--ink);
+    padding:7px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); transition:.15s;
+    display:inline-flex; align-items:center; gap:7px}
+  .nav a:hover{border-color:var(--primary); color:var(--primary)}
+  .nav a .cnt{font-size:11px; color:var(--muted); background:var(--bg); border-radius:999px; padding:1px 7px}
+  .nav a .sw{width:8px;height:8px;border-radius:50%}
+  /* SECTIONS */
+  .section{margin-bottom:30px; scroll-margin-top:70px}
+  .sec-head{display:flex; align-items:center; gap:12px; margin:6px 2px 16px}
+  .sec-head .bar{width:5px; height:22px; border-radius:3px; background:var(--accent)}
+  .sec-head h2{font-size:19px; margin:0; font-weight:800}
+  .sec-head .badge{font-size:12.5px; color:var(--muted); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:2px 10px}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:18px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 18px 16px; box-shadow:var(--shadow); position:relative;
+    display:flex; flex-direction:column; transition:.16s; border-top:3px solid var(--accent)}
+  .card:hover{transform:translateY(-3px); box-shadow:0 10px 30px rgba(16,24,40,.10)}
+  .card.read{opacity:.6}
+  .card.read .idx{background:#9aa3b2}
+  .card-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .card-top .right{display:flex; align-items:center; gap:8px}
+  .idx{font-size:13px; font-weight:800; color:#fff; background:var(--accent); border-radius:8px; padding:2px 9px; letter-spacing:.5px}
+  .time{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .mark{font-size:11.5px; color:var(--accent); background:transparent; border:1px solid color-mix(in srgb,var(--accent) 35%,#fff);
+    border-radius:7px; padding:2px 8px; cursor:pointer; font-weight:600; font-family:inherit}
+  .card.read .mark{color:#9aa3b2; border-color:#d7dbe3}
+  .card-title{font-size:16px; font-weight:700; margin:2px 0 10px; line-height:1.45}
+  .card-title a{text-decoration:none}
+  .card-title a:hover{color:var(--accent); text-decoration:underline}
+  .chip{align-self:flex-start; font-size:12px; font-weight:600; color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 10%,#fff); border:1px solid color-mix(in srgb,var(--accent) 22%,#fff);
+    border-radius:999px; padding:3px 11px; margin-bottom:10px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .sum{font-size:13.5px; color:#374151; margin:0 0 14px; flex:1}
+  .link{align-self:flex-start; font-size:13px; font-weight:700; color:var(--accent); text-decoration:none;
+    border:1px solid color-mix(in srgb,var(--accent) 30%,#fff); border-radius:9px; padding:6px 12px; transition:.15s}
+  .link:hover{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .empty{grid-column:1/-1; text-align:center; color:var(--muted); font-size:14px;
+    padding:28px; border:1px dashed var(--line); border-radius:var(--radius); background:var(--card)}
+  .foot{margin-top:36px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+  .foot a{color:var(--primary); text-decoration:none; font-weight:600}
+  .foot a:hover{text-decoration:underline}
+  .toast{position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px);
+    background:#1f2430; color:#fff; padding:11px 18px; border-radius:12px; font-size:13.5px;
+    box-shadow:0 8px 30px rgba(0,0,0,.25); opacity:0; transition:.25s; z-index:80; pointer-events:none}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  @media (max-width:560px){
+    .grid{grid-template-columns:1fr}
+    .date{font-size:22px}
+    .hero{padding:28px 20px 22px}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-top">
+      <div class="brand"><span class="dot"></span>AI 晨报 · AI HOT</div>
+      <button class="refresh" id="refreshBtn" onclick="refresh()">↻ 刷新数据</button>
+    </div>
+    <div class="date" id="heroDate">—</div>
+    <div class="sub" id="heroSub"></div>
+    <div class="stats" id="heroStats"></div>
+    <div class="status" id="status"></div>
+    <div class="settings">
+      <div class="grp">自动刷新
+        <select id="autoSel" onchange="onAutoChange()">
+          <option value="0">关闭</option>
+          <option value="1">每 1 分钟</option>
+          <option value="5">每 5 分钟</option>
+          <option value="15">每 15 分钟</option>
+          <option value="30">每 30 分钟</option>
+        </select>
+      </div>
+      <div class="grp" title="留空即自动通过内置公共代理链获取实时数据（连本地 file:// 也生效）；如需更稳定的同源连接，运行同目录 aihot-proxy-server.mjs">CORS 代理（可选 · 留空=自动公共代理）
+        <input id="proxyInput" type="text" placeholder="留空=自动公共代理；填自有代理如 https://x/?url=" size="34"
+               onchange="onProxyChange()">
+      </div>
+    </div>
+  </header>
+
+  <div class="errbar" id="errbar">
+    <span class="msg" id="errMsg"></span>
+    <button class="retry" onclick="refresh()">重试</button>
+    <button class="close" onclick="hideError()">关闭</button>
+  </div>
+
+  <nav class="nav" id="nav"></nav>
+  <main id="content"></main>
+  <footer class="foot" id="foot"></footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const EMBEDDED = {"fetchedAt":"2026-07-13T01:20:03+08:00","issue":{"date":"2026-07-12","source":"AI HOT","canonical":"https://aihot.virxact.com/daily/2026-07-12","generatedAt":"2026-07-12T00:00:00.777Z"},"sections":[{"key":"ai-models","label":"模型发布/更新","items":[{"title":"蚂蚁集团 Robbyant 发布 LingBot-VA 2.0，首个原生具身基础模型","summary":"蚂蚁集团旗下具身智能团队 Robbyant 发布 LingBot-VA 2.0，首个原生具身基础模型。该模型采用因果 DiT 架构，视频专家约 13.0B 参数（约 1.9B 激活），训练规模约 15.3B 参数，推理时每 token 约 2.5B 激活。模型引入多块预测（MCP）实现 2.3 倍训练加速，并通过前瞻推理将推理延迟降至 142 ms/chunk。在 RoboTwin 2.0 的 50 个任务上，干净与随机演示数据平均成功率分别达 93.8% 和 93.4%。","source":"MarkTechPost（RSS）","url":"https://www.marktechpost.com/2026/07/11/ant-groups-robbyant-unveils-lingbot-va-2-0","permalink":"https://aihot.virxact.com/items/cmrg3dsyt00g4iha7og0687tc","publishedAt":"2026-07-11T07:56:11.000Z"},{"title":"OpenAI 发布 GPT-5.6 系列医疗评估结果","summary":"OpenAI 发布 GPT-5.6 系列在医疗领域的评估结果。最小变体 GPT-5.6 Luna 在最低推理强度下即超越最高推理强度的 GPT-5.5，且成本低 25 倍；最大变体 GPT-5.6 Sol 树立新标杆。在涵盖患者端与临床端的多样化任务中，专科医生被要求以无限时间和网络访问权限撰写回答，随后由其他医生盲评。评估基于准确性、沟通、完整性、指令遵循及健康决策帮助性五个维度，共 20000 次评分。结果显示，所有 GPT-5.6 模型表现均显著优于医生，且医生发现 GPT-5.6 回答中的缺陷少于医生自己撰写的回答。","source":"X：Sam Altman (@sama)","url":"https://x.com/sama/status/2075985056846451123","permalink":"https://aihot.virxact.com/items/cmrglvcki024uih2edvsk7pef","publishedAt":"2026-07-11T16:46:22.000Z"}]},{"key":"ai-products","label":"产品发布/更新","items":[{"title":"Claude Code v2.1.207 发布","summary":"Claude Code v2.1.207 发布。Auto 模式在 Bedrock、Vertex AI 和 Foundry 上无需 `CLAUDE_CODE_ENABLE_AUTO_MODE` 即可使用，可通过 `disableAutoMode` 设置关闭。修复了流式响应中包含超长列表、表格、段落或代码块时终端冻结和按键延迟的问题；修复了非交互式运行中远程托管设置被永久记录为已同意而未显示安全同意对话框的问题；修复了自动更新程序每次发布时覆盖 `~/.local/bin/claude` 自定义启动脚本或符号链接的问题。Bedrock、Vertex 和 Claude Platform on AWS 默认切换为 Claude Opus 4…","source":"Claude Code：GitHub Releases（RSS）","url":"https://github.com/anthropics/claude-code/releases/tag/v2.1.207","permalink":"https://aihot.virxact.com/items/cmrfoggdz01o7ihjl1exdh1qt","publishedAt":"2026-07-11T00:52:10.000Z"}]},{"key":"industry","label":"行业动态","items":[{"title":"OpenAI GPT-5.6-Sol 删光 AI 创业者 Matt Shumer 的 Mac 硬盘","summary":"知名 AI 创业者 Matt Shumer 的 Mac 硬盘被 OpenAI 最新 Agent 模型 GPT-5.6-Sol 彻底清空。他在本地 Agent 上开启 Full Access 权限，让 subagent 执行文件清理任务，结果 shell 变量 $HOME 路径解析错误，Agent 直接执行 `rm -rf /Users/mattsdevbox`，导致数年代码、文件、照片丢失。该任务此前已安全运行数百次。事后 Agent 自动生成事故报告承认错误。Matt 表示“1000x 更信任 Anthropic 的 Fable”。事件暴露 Agent 行业核心风险：顶级模型仍会在变量展开、路径等细节翻车；Subagent + 长…","source":"X：阿易 AI Notes (@AYi_AInotes)","url":"https://x.com/AYi_AInotes/status/2075761215251312722","permalink":"https://aihot.virxact.com/items/cmrfr2xvi02brihjlp1tlzg1n","publishedAt":"2026-07-11T01:56:54.000Z"},{"title":"研究：博科圣地已使用ChatGPT、Claude等主流AI聊天机器人用于袭击策划与武器开发","summary":"剑桥大学CASP研究员Antonia Jülich对27名前成员的57次访谈显示，博科圣地已使用ChatGPT、Claude、Gemini、Grok、Meta AI和DeepSeek等主流AI聊天机器人，用于袭击策划、制造更强爆炸装置、武器维护及行动安全。该组织两个派系均设立了专门的AI部门。ISIS自2023年起便提供提示工程和越狱培训，并训练尼日利亚的博科圣地指挥官绕过AI安全过滤器。研究指出，安全过滤器未能可靠防止滥用。Anthropic近期承认，越狱可能永远无法完全消除。","source":"The Decoder：AI News（RSS）","url":"https://the-decoder.com/terrorist-groups-are-using-every-major-ai-chatbot-for-attack-planning-and-weapons-development","permalink":"https://aihot.virxact.com/items/cmrgmylg702eaih2e1e9hhfe4","publishedAt":"2026-07-11T17:04:28.000Z"},{"title":"11天Claude Fable 5写超100万行代码：Rust重构JavaScript运行时Bun","summary":"开发者Jarred Sumner借助Claude Fable 5模型，11天内将Bun从Zig重写为Rust，64个实例并行编写超100万行代码，API费用约16.5万美元。重构主因是Zig频繁内存错误，Rust可在编译时捕获。Bun v1.4.0以Canary版本发布，修复128个错误，速度提高约2%到5%。Bun团队已于2025年12月被Anthropic收购。","source":"IT之家（RSS）","url":"https://www.ithome.com/0/975/469.htm","permalink":"https://aihot.virxact.com/items/cmrg3syhp00l7iha7a3ansg62","publishedAt":"2026-07-11T07:33:08.000Z"},{"title":"彭博社揭秘苹果起诉 OpenAI 内幕：前员工一句“哈哈”成窃密关键","summary":"苹果起诉 OpenAI，指控前工程师 Chang Liu 离职时带走未归还的 MacBook、一名可分享内情的员工，并利用软件漏洞持续访问苹果内网。他发现漏洞后向同事分享“哈哈，我发现我还能访问网络存储”，后者协助其获取更多机密。苹果称 OpenAI 试图复制 iPhone 产品研发体系，核心从非法窃取的商业机密腐烂。目前已有超 400 名苹果员工跳槽至 OpenAI，包括前苹果高管、现任 OpenAI 首席硬件官 Tang Tan。苹果曾于今年 2 月尝试私了，但 OpenAI 未回应。","source":"IT之家（RSS）","url":"https://www.ithome.com/0/975/634.htm","permalink":"https://aihot.virxact.com/items/cmrgzykqg00jabid4acp6zpjm","publishedAt":"2026-07-11T23:21:57.000Z"}]},{"key":"paper","label":"论文研究","items":[]},{"key":"tip","label":"技巧与观点","items":[{"title":"Ghost Font：一种人类能读懂但AI无法识别的反AI字体","summary":"Ghost Font 是一种利用运动、视频、噪点和诱饵来隐藏文字的反AI字体。用户输入文字后可生成并下载视频片段，视频中的字母由与背景完全相同的点组成，单帧截图无法显示任何信息。该字体生成的视频被传递给Claude Fable和GPT Sol 5.6 Ultra等前沿模型时，这些模型即使具备编程能力也无法解码移动信息，直到被提示具体技术。视频中还包含一条诱饵信息，使模型误以为找到真实内容。项目灵感来自2013年Sang Mun设计的ZXX字体，但现代AI已能轻松读取ZXX。Ghost Font目前为本地原型，数据不发送至任何服务器。作者计划未来将视频生成代码开源，并探索将其用于CAPTCHA系统或AI视觉感知基准测试。","source":"Hacker News 热门（buzzing.cc 中文翻译）","url":"https://www.mixfont.com/ghost-font","permalink":"https://aihot.virxact.com/items/cmrglsyla01zoih2enmsl2eu8","publishedAt":"2026-07-11T16:31:09.615Z"}]}]};
+const SECTIONS = [
+  {key:"ai-models",   label:"模型发布/更新", accent:"var(--c-ai-models)"},
+  {key:"ai-products", label:"产品发布/更新", accent:"var(--c-ai-products)"},
+  {key:"industry",    label:"行业动态",     accent:"var(--c-industry)"},
+  {key:"paper",       label:"论文研究",     accent:"var(--c-paper)"},
+  {key:"tip",         label:"技巧与观点",   accent:"var(--c-tip)"},
+];
+const API = "https://aihot.virxact.com/api/public";
+const DIRECT = API;   // 直连（file:// 下会被浏览器 CORS 拦截）
+
+let DATA = null;
+let MODE = "snapshot";
+let refreshing = false;        // (5) 防重复请求
+let autoTimer = null;
+let proxyURL = "";
+
+/* ---------- 用户状态：已读标记（按 permalink 持久化） ---------- */
+let readSet = new Set();
+try { readSet = new Set(JSON.parse(localStorage.getItem("aihot_read") || "[]")); } catch(e) {}
+
+/* ---------- helpers ---------- */
+function beijingParts(iso){
+  const d = new Date(iso);
+  const bt = new Date(d.getTime() + 8*3600*1000);
+  return {y:bt.getUTCFullYear(), mo:bt.getUTCMonth()+1, da:bt.getUTCDate(),
+          hh:bt.getUTCHours(), mm:bt.getUTCMinutes()};
+}
+function fmtTime(iso, issueDate){
+  if(!iso) return "";
+  const p = beijingParts(iso);
+  const hh = String(p.hh).padStart(2,'0');
+  const mm = String(p.mm).padStart(2,'0');
+  const [iy,im,id] = issueDate.split('-').map(Number);
+  const diff = Math.round((Date.UTC(iy,im-1,id) - Date.UTC(p.y,p.mo-1,p.da))/86400000);
+  if(diff === 0) return "今天 " + hh + ":" + mm;
+  if(diff === 1) return "昨天 " + hh + ":" + mm;
+  return p.mo + "月" + p.da + "日 " + hh + ":" + mm;
+}
+function weekday(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const w = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"][new Date(y,m-1,d).getDay()];
+  return y + "年" + m + "月" + d + "日 " + w;
+}
+function truncate(s, n){ return (!s || s.length <= n) ? (s||"") : s.slice(0,n) + "…"; }
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ---------- 持久化设置 ---------- */
+function onAutoChange(){
+  const min = parseInt(document.getElementById('autoSel').value, 10);
+  localStorage.setItem("aihot_auto", String(min));
+  applyAuto(min);
+  toast(min > 0 ? ("已开启自动刷新：每 " + min + " 分钟") : "已关闭自动刷新");
+}
+function onProxyChange(){
+  proxyURL = (document.getElementById('proxyInput').value || "").trim();
+  localStorage.setItem("aihot_proxy", proxyURL);
+}
+function applyAuto(min){
+  if(autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+  if(min > 0) autoTimer = setInterval(() => refresh(true), min * 60000);
+}
+/* ---------- 数据来源解析（三级择路） ----------
+   优先级：① 同源代理（本地 aihot-proxy-server.mjs 注入 window.__AIHOT_PROXY__）
+           ② 用户自定义 CORS 代理（上方输入框）
+           ③ 内置公共代理链（自动，连 file:// 也能用，无需后端）            */
+const PROXY_CHAIN = [
+  {name:"allorigins",   base:"https://api.allorigins.win/raw?url="},
+  {name:"cors-bridged", base:"https://cors.bridged.cc/"},
+  {name:"yacdn",        base:"https://yacdn.org/proxy/"},
+  {name:"cf-workers",   base:"https://test.cors.workers.dev/?"},
+];
+function resolveDirect(path){
+  if(window.__AIHOT_PROXY__) return window.__AIHOT_PROXY__ + path;        // 同源
+  if(proxyURL) return proxyURL + encodeURIComponent(API + path);          // 用户代理
+  return null;                                                           // 走内置链
+}
+function chainURL(p, path){ return p.base + encodeURIComponent(API + path); }
+async function getJSON(url, timeoutMs){
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs || 15000);
+  try{
+    const r = await fetch(url, {signal:ctrl.signal, headers:{"User-Agent":navigator.userAgent}});
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+/* 统一取数：自动在「同源 / 用户代理 / 内置链」间择路；内置链逐代理带超时重试 */
+async function fetchData(path){
+  const direct = resolveDirect(path);
+  if(direct) return await getJSON(direct);
+  let lastErr;
+  for(const p of PROXY_CHAIN){
+    try{
+      const data = await getJSON(chainURL(p, path), 15000);
+      if(data && typeof data === "object") return data;
+    }catch(e){ lastErr = e; }
+  }
+  throw new Error(lastErr ? lastErr.message : "所有公共代理均不可用");
+}
+
+/* ---------- normalize ---------- */
+function normalize(daily, pmap){
+  const map = {};
+  (daily.sections||[]).forEach(s => { map[s.label] = s.items||[]; });
+  const sections = SECTIONS.map(sec => ({
+    key: sec.key, label: sec.label,
+    items: (map[sec.label]||[]).map(it => ({
+      title: it.title || "",
+      summary: (it.summary || "").trim(),
+      source: it.sourceName || it.source || "AI HOT",
+      url: it.sourceUrl || it.url || it.permalink || "#",
+      permalink: it.permalink || "",
+      publishedAt: (pmap && it.permalink && pmap[it.permalink]) ? pmap[it.permalink] : (it.publishedAt || null)
+    }))
+  }));
+  return {
+    issue: {
+      date: daily.date,
+      source: (daily.attribution && daily.attribution.source) || "AI HOT",
+      canonical: (daily.attribution && daily.attribution.canonical) || "",
+      generatedAt: daily.generatedAt || null
+    },
+    sections
+  };
+}
+
+/* ---------- render（保留滚动/已读状态） ---------- */
+function render(){
+  const sy = window.scrollY;
+  const aeId = (document.activeElement && document.activeElement.id) ? document.activeElement.id : null;
+
+  const issue = DATA.issue;
+  const total = DATA.sections.reduce((a,s)=>a+s.items.length, 0);
+
+  document.getElementById('heroDate').textContent = weekday(issue.date);
+  document.getElementById('heroSub').textContent =
+    "每日 AI 行业精选 · 共 " + total + " 条 · 数据日期 " + issue.date;
+
+  document.getElementById('heroStats').innerHTML = DATA.sections.map(s =>
+    '<div class="stat"><div class="n">'+s.items.length+'</div><div class="l">'+esc(s.label)+'</div></div>'
+  ).join('');
+
+  document.getElementById('nav').innerHTML = SECTIONS.map(sec => {
+    const s = DATA.sections.find(x=>x.key===sec.key);
+    const c = s ? s.items.length : 0;
+    return '<a href="#sec-'+sec.key+'"><span class="sw" style="background:'+sec.accent+'"></span>'
+      + esc(sec.label) + '<span class="cnt">'+c+'</span></a>';
+  }).join('');
+
+  let html = "", g = 0;
+  SECTIONS.forEach(sec => {
+    const s = DATA.sections.find(x=>x.key===sec.key) || {items:[]};
+    const accent = sec.accent;
+    html += '<section class="section" id="sec-'+sec.key+'" style="--accent:'+accent+'">';
+    html += '<div class="sec-head"><span class="bar"></span><h2>'+esc(sec.label)
+      + '</h2><span class="badge">'+s.items.length+' 条</span></div>';
+    if(s.items.length === 0){
+      html += '<div class="grid"><div class="empty">本期暂无相关条目</div></div>';
+    } else {
+      html += '<div class="grid">';
+      s.items.forEach(it => {
+        g++;
+        const num = String(g).padStart(2,'0');
+        const t = fmtTime(it.publishedAt, issue.date);
+        const timeHtml = t ? '<span class="time">'+esc(t)+'</span>' : '<span class="time"></span>';
+        const url = it.url && it.url !== "#" ? it.url : it.permalink;
+        const safeUrl = esc(url);
+        const aAttrs = 'href="'+safeUrl+'" target="_blank" rel="noopener noreferrer"';
+        const isRead = readSet.has(it.permalink);
+        html += '<article class="card'+(isRead?' read':'')+'">'
+          + '<div class="card-top"><span class="idx">'+num+'</span>'
+          + '<span class="right"><button class="mark" data-pid="'+esc(it.permalink)+'" onclick="toggleRead(this)">'
+          + (isRead?'已读 ✓':'标记已读') + '</button>'+timeHtml+'</span></div>'
+          + '<h3 class="card-title"><a '+aAttrs+'>'+esc(it.title)+'</a></h3>'
+          + '<span class="chip" title="'+esc(it.source)+'">'+esc(it.source)+'</span>'
+          + '<p class="sum" title="'+esc(it.summary)+'">'+esc(truncate(it.summary,60))+'</p>'
+          + '<a class="link" '+aAttrs+'>阅读原文 →</a></article>';
+      });
+      html += '</div>';
+    }
+    html += '</section>';
+  });
+  document.getElementById('content').innerHTML = html;
+
+  const src = issue.canonical
+    ? '<a href="'+esc(issue.canonical)+'" target="_blank" rel="noopener noreferrer">'+esc(issue.source)+'</a>'
+    : esc(issue.source);
+  document.getElementById('foot').innerHTML =
+    "共 <strong>"+total+"</strong> 条 · 数据来源 " + src + "（aihot.virxact.com）";
+
+  // (6) 还原用户状态：滚动位置 + 焦点
+  window.scrollTo(0, sy);
+  if(aeId){ const el = document.getElementById(aeId); if(el) el.focus({preventScroll:true}); }
+}
+
+function toggleRead(btn){
+  const pid = btn.dataset.pid;
+  if(readSet.has(pid)) readSet.delete(pid); else readSet.add(pid);
+  try { localStorage.setItem("aihot_read", JSON.stringify([...readSet])); } catch(e){}
+  const card = btn.closest('.card');
+  const on = readSet.has(pid);
+  card.classList.toggle('read', on);
+  btn.textContent = on ? '已读 ✓' : '标记已读';
+}
+
+/* ---------- 加载状态 / 错误 ---------- */
+function setLoading(on){
+  document.getElementById('progress').classList.toggle('active', on);
+  const b = document.getElementById('refreshBtn');
+  b.disabled = on; b.textContent = on ? '↻ 获取中…' : '↻ 刷新数据';
+}
+function showError(msg){ document.getElementById('errMsg').textContent = msg; document.getElementById('errbar').classList.add('show'); }
+function hideError(){ document.getElementById('errbar').classList.remove('show'); }
+
+/* ---------- 实时拉取（自动择路 + 代理链兜底） ---------- */
+async function loadLive(){
+  let daily = await fetchData("/daily");
+  if(!daily || !daily.sections || daily.sections.length === 0){
+    const dl = await fetchData("/dailies?take=5");
+    const items = (dl && dl.items) || [];
+    if(items.length) daily = await fetchData("/daily/" + items[0].date);
+  }
+  if(!daily) return null;
+  const ws = daily.windowStart || "2026-07-10T00:00:00.000Z";
+  let pmap = {};
+  try{
+    let cursor = null, pages = 0;
+    while(pages < 8){
+      let u = "/items?mode=all&since=" + ws + "&take=100";
+      if(cursor) u += "&cursor=" + encodeURIComponent(cursor);
+      const d = await fetchData(u);
+      (d.items||[]).forEach(it => { pmap[it.permalink] = it.publishedAt; });
+      if(!d.hasNext) break;
+      cursor = d.nextCursor; if(!cursor) break; pages++;
+    }
+  }catch(e){ /* 时间戳可选，失败不影响条目展示 */ }
+  return normalize(daily, pmap);
+}
+
+/* ---------- 刷新主流程（含防重 + 状态保留） ---------- */
+async function refresh(isAuto){
+  if(refreshing) return;            // (5) 刷新中不再发起
+  refreshing = true;
+  setLoading(true);
+  hideError();
+  try{
+    const live = await loadLive();
+    if(live && live.sections.some(s=>s.items.length)){
+      DATA = live; MODE = "live"; render();
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2,'0'), mm = String(now.getMinutes()).padStart(2,'0');
+      document.getElementById('status').textContent = "● 实时数据 · 拉取于 " + hh + ":" + mm;
+      hideError();
+      toast("已更新为实时数据");
+    } else {
+      showError("未获取到新数据，已保留当前内容。");
+    }
+  }catch(e){
+    showError("实时获取失败：" + (e && e.message ? e.message : e) + "。公共代理可能临时限流，可稍后点重试；或在本地运行同目录 aihot-proxy-server.mjs 获得更稳定的同源连接。（已保留当前内容）");
+    if(!isAuto) toast("实时获取失败，已使用内置快照");
+  }finally{
+    refreshing = false;
+    setLoading(false);
+  }
+}
+
+/* ---------- boot ---------- */
+DATA = EMBEDDED;
+document.getElementById('status').textContent = "● 内置数据快照 · 生成于 "
+  + EMBEDDED.fetchedAt.replace("T"," ").slice(0,16) + "（AI HOT 日报）";
+if(location.protocol === 'file:' && !proxyURL && !window.__AIHOT_PROXY__){
+  toast("本地面板将通过公共代理获取实时数据；运行同目录 aihot-proxy-server.mjs 可获得更稳定的同源连接");
+}
+const savedAuto = parseInt(localStorage.getItem("aihot_auto") || "0", 10);
+document.getElementById('autoSel').value = String(savedAuto);
+proxyURL = localStorage.getItem("aihot_proxy") || "";
+document.getElementById('proxyInput').value = proxyURL;
+applyAuto(savedAuto);
+render();
+</script>
+</body>
+</html>
