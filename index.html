@@ -404,7 +404,7 @@ function render(){
   ).join('');
 
   document.getElementById('nav').innerHTML = SECTIONS.map(sec => {
-    const s = DATA.sections.find(x=>x.key===sec.key);
+    const s = DATA.sections.find(x => x && (x.key===sec.key || x.label===sec.label));
     const c = s ? s.items.length : 0;
     return '<a href="#sec-'+sec.key+'"><span class="sw" style="background:'+sec.accent+'"></span>'
       + esc(sec.label) + '<span class="cnt">'+c+'</span></a>';
@@ -412,7 +412,7 @@ function render(){
 
   let html = "", g = 0;
   SECTIONS.forEach(sec => {
-    const s = DATA.sections.find(x=>x.key===sec.key) || {items:[]};
+    const s = DATA.sections.find(x => x && (x.key===sec.key || x.label===sec.label)) || {items:[]};
     const accent = sec.accent;
     html += '<section class="section" id="sec-'+sec.key+'" style="--accent:'+accent+'">';
     html += '<div class="sec-head"><span class="bar"></span><h2>'+esc(sec.label)
@@ -576,8 +576,10 @@ render();
 // 后台静默尝试读取 GitHub Actions 提交的同源快照，若存在则更新（不阻塞首屏）
 (async function bootSync(){
   try{
-    const snap = await loadSnapshot();
-    if(snap && snap.sections && snap.sections.some(s=>s.items.length)){
+    const raw = await loadSnapshot();
+    if(raw && raw.sections && raw.sections.some(s=>s.items.length)){
+      const snap = normalize(raw, {});            // 原始快照无 issue/key 包装，需归一化
+      snap.fetchedAt = raw.fetchedAt || new Date().toISOString();
       DATA = snap; MODE = "snapshot"; render(); saveCache(snap);
       document.getElementById('status').textContent = "● 已同步数据 · GitHub Actions 更新于 " + formatBeijing(snap.fetchedAt);
       toast("已同步为仓库最新数据");
