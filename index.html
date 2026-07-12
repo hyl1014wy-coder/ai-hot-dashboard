@@ -266,11 +266,25 @@ async function fetchData(path){
   let lastErr;
   for(const p of PROXY_CHAIN){
     try{
-      const data = await getJSON(chainURL(p, path), 15000);
+      const data = await getJSON(chainURL(p, path), 20000);
       if(data && typeof data === "object") return data;
     }catch(e){ lastErr = e; }
   }
   throw new Error(lastErr ? lastErr.message : "所有公共代理均不可用");
+}
+
+/* 读取 GitHub Actions 提交的同源快照（无 CORS、最稳） */
+async function loadSnapshot(){
+  try{
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000);
+    const r = await fetch("data/latest.json", {signal: ctrl.signal, headers:{"Accept":"application/json"}});
+    clearTimeout(t);
+    if(!r.ok) return null;
+    const d = await r.json();
+    if(d && d.sections && d.sections.length) return d;
+  }catch(e){}
+  return null;
 }
 
 /* ---------- normalize ---------- */
@@ -387,15 +401,25 @@ function setLoading(on){
 function showError(msg){ document.getElementById('errMsg').textContent = msg; document.getElementById('errbar').classList.add('show'); }
 function hideError(){ document.getElementById('errbar').classList.remove('show'); }
 
-/* ---------- 实时拉取（自动择路 + 代理链兜底） ---------- */
+/* ---------- 实时拉取（先读同源快照，再走代理链，最后回退） ---------- */
 async function loadLive(){
-  let daily = await fetchData("/daily");
-  if(!daily || !daily.sections || daily.sections.length === 0){
-    const dl = await fetchData("/dailies?take=5");
-    const items = (dl && dl.items) || [];
-    if(items.length) daily = await fetchData("/daily/" + items[0].date);
+  // 1. 同源快照（GitHub Actions 定时提交，无 CORS，最稳）
+  let daily = await loadSnapshot();
+  let source = "snapshot";
+
+  // 2. 若无快照，走实时公共代理链
+  if(!daily){
+    daily = await fetchData("/daily");
+    source = "live";
+    if(!daily || !daily.sections || daily.sections.length === 0){
+      const dl = await fetchData("/dailies?take=5");
+      const items = (dl && dl.items) || [];
+      if(items.length) daily = await fetchData("/daily/" + items[0].date);
+    }
   }
   if(!daily) return null;
+
+  // 3. 补充时间戳（快照已带 publishedAt，会跳过）
   const ws = daily.windowStart || "2026-07-10T00:00:00.000Z";
   let pmap = {};
   try{
@@ -409,7 +433,10 @@ async function loadLive(){
       cursor = d.nextCursor; if(!cursor) break; pages++;
     }
   }catch(e){ /* 时间戳可选，失败不影响条目展示 */ }
-  return normalize(daily, pmap);
+  const result = normalize(daily, pmap);
+  result.source = source;
+  result.fetchedAt = daily.fetchedAt || new Date().toISOString();
+  return result;
 }
 
 /* ---------- 刷新主流程（含防重 + 状态保留） ---------- */
@@ -421,17 +448,22 @@ async function refresh(isAuto){
   try{
     const live = await loadLive();
     if(live && live.sections.some(s=>s.items.length)){
-      DATA = live; MODE = "live"; render();
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2,'0'), mm = String(now.getMinutes()).padStart(2,'0');
-      document.getElementById('status').textContent = "● 实时数据 · 拉取于 " + hh + ":" + mm;
+      DATA = live; MODE = live.source || "live"; render();
+      const beijing = new Date(live.fetchedAt).toLocaleString("zh-CN", {timeZone:"Asia/Shanghai", hour12:false}).replace(/\//g,'-');
+      if(MODE === "snapshot"){
+        document.getElementById('status').textContent = "● 已同步数据 · GitHub Actions 更新于 " + beijing;
+        toast("已同步为仓库最新数据");
+      } else {
+        const hh = String(new Date().getHours()).padStart(2,'0'), mm = String(new Date().getMinutes()).padStart(2,'0');
+        document.getElementById('status').textContent = "● 实时数据 · 拉取于 " + hh + ":" + mm;
+        toast("已更新为实时数据");
+      }
       hideError();
-      toast("已更新为实时数据");
     } else {
       showError("未获取到新数据，已保留当前内容。");
     }
   }catch(e){
-    showError("实时获取失败：" + (e && e.message ? e.message : e) + "。公共代理可能临时限流，可稍后点重试；或在本地运行同目录 aihot-proxy-server.mjs 获得更稳定的同源连接。（已保留当前内容）");
+    showError("实时获取失败：" + (e && e.message ? e.message : e) + "。公共代理可能临时限流，可稍后点重试；或添加本仓库的 GitHub Actions 工作流（data/latest.json 同源快照）获得稳定更新。（已保留当前内容）");
     if(!isAuto) toast("实时获取失败，已使用内置快照");
   }finally{
     refreshing = false;
@@ -439,10 +471,14 @@ async function refresh(isAuto){
   }
 }
 
+function formatBeijing(iso){
+  return new Date(iso).toLocaleString("zh-CN", {timeZone:"Asia/Shanghai", hour12:false}).replace(/\//g,'-');
+}
+
 /* ---------- boot ---------- */
 DATA = EMBEDDED;
 document.getElementById('status').textContent = "● 内置数据快照 · 生成于 "
-  + EMBEDDED.fetchedAt.replace("T"," ").slice(0,16) + "（AI HOT 日报）";
+  + formatBeijing(EMBEDDED.fetchedAt).slice(0,16) + "（AI HOT 日报）";
 if(location.protocol === 'file:' && !proxyURL && !window.__AIHOT_PROXY__){
   toast("本地面板将通过公共代理获取实时数据；运行同目录 aihot-proxy-server.mjs 可获得更稳定的同源连接");
 }
@@ -452,6 +488,18 @@ proxyURL = localStorage.getItem("aihot_proxy") || "";
 document.getElementById('proxyInput').value = proxyURL;
 applyAuto(savedAuto);
 render();
+
+// 后台静默尝试读取 GitHub Actions 提交的同源快照，若存在则更新（不阻塞首屏）
+(async function bootSync(){
+  try{
+    const snap = await loadSnapshot();
+    if(snap && snap.sections && snap.sections.some(s=>s.items.length)){
+      DATA = snap; MODE = "snapshot"; render();
+      document.getElementById('status').textContent = "● 已同步数据 · GitHub Actions 更新于 " + formatBeijing(snap.fetchedAt);
+      toast("已同步为仓库最新数据");
+    }
+  }catch(e){ /* 无快照或旧版部署时静默忽略 */ }
+})();
 </script>
 </body>
 </html>
