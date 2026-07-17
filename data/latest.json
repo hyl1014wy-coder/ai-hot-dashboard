@@ -4,11 +4,27 @@
     "source": "AI HOT",
     "canonical": "https://aihot.virxact.com/daily/2026-07-17"
   },
-  "generatedAt": "2026-07-17T00:00:00.844Z",
+  "generatedAt": "2026-07-17T03:32:49.005Z",
   "windowStart": "2026-07-16T00:00:00.000Z",
   "windowEnd": "2026-07-17T00:00:00.000Z",
   "lead": null,
   "sections": [
+    {
+      "label": "模型发布/更新",
+      "items": [
+        {
+          "title": "Kimi K3 发布：2.8T 参数开源模型，具备原生视觉与百万 token 上下文窗口",
+          "summary": "月之暗面发布 Kimi K3，一个 2.8T 参数的开源模型，采用 Kimi Delta Attention 和 Attention Residuals 架构，支持原生视觉能力与 100 万 token 上下文窗口。",
+          "sourceUrl": "https://www.kimi.com/blog/kimi-k3",
+          "sourceName": "Moonshot AI：Kimi Blog",
+          "permalink": "https://aihot.virxact.com/items/cmrnvwztt01bdbixyj6fk8322",
+          "attribution": {
+            "source": "AI HOT",
+            "canonical": "https://aihot.virxact.com/items/cmrnvwztt01bdbixyj6fk8322"
+          }
+        }
+      ]
+    },
     {
       "label": "产品发布/更新",
       "items": [
@@ -343,5 +359,5 @@
     }
   ],
   "flashes": [],
-  "fetchedAt": "2026-07-17T03:31:15.446382Z"
+  "fetchedAt": "2026-07-17T09:27:22.512134Z"
 }
